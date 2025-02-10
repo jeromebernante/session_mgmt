@@ -70,7 +70,7 @@
               // Loop through the session array to create input fields
               foreach ($_SESSION as $key => $value) {
                 echo '<div class="mb-3">';
-                echo '<label for="' . htmlspecialchars($key) . '" class="form-label">' . htmlspecialchars(ucfirst($key)) . ':</label>';
+                echo '<label for="' . htmlspecialchars($key) . '" class="form-label">' . htmlspecialchars($key) . ':</label>';
                 echo '<input type="text" class="form-control" id="' . htmlspecialchars($key) . '" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($value) . '">';
                 echo '</div>';
               }

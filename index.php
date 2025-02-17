@@ -20,12 +20,34 @@
     echo "</pre>";
   }
 
+  // Function to recursively convert arrays and objects to JSON string
+  function recursive_convert($value)
+  {
+    if (is_array($value) || is_object($value)) {
+      return json_encode($value, JSON_PRETTY_PRINT); // Using pretty print for readability
+    } elseif (is_null($value)) {
+      return "NULL"; // Handle null values explicitly
+    } elseif (is_bool($value)) {
+      return $value ? "true" : "false"; // Handle boolean values
+    }
+    return $value; // Return scalar values directly (strings, integers, etc.)
+  }
+
+  // Function to check if a value looks like JSON
+  function is_json($value)
+  {
+    // Try decoding the value
+    $decoded = json_decode($value);
+    // Check if it's a valid JSON and whether the decoded value is actually an object or array
+    return (json_last_error() == JSON_ERROR_NONE && (is_array($decoded) || is_object($decoded)));
+  }
+
   // Check if form to update session is submitted
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_session'])) {
     // Loop through posted data and update session variables
     foreach ($_POST as $key => $value) {
       if (array_key_exists($key, $_SESSION)) {
-        $_SESSION[$key] = htmlspecialchars($value);
+        $_SESSION[$key] = recursive_convert($value);  // Apply conversion recursively
       }
     }
   }
@@ -37,16 +59,16 @@
 
   // Check if form to add new session variable is submitted
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['new_session'])) {
-    $new_key = htmlspecialchars($_POST['new_key']);
-    $new_value = htmlspecialchars($_POST['new_value']);
+    $new_key = $_POST['new_key'];
+    $new_value = $_POST['new_value'];
     if (!empty($new_key) && !empty($new_value)) {
-      $_SESSION[$new_key] = $new_value;
+      $_SESSION[$new_key] = recursive_convert($new_value); // Apply conversion recursively
     }
   }
 
   // Check if the form is submitted
   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['plain_text'])) {
-    $plain_text = htmlspecialchars($_POST['plain_text']);
+    $plain_text = $_POST['plain_text'];
     // Hash the plain text using bcrypt
     $hashed_value = password_hash($plain_text, PASSWORD_BCRYPT);
     echo '<div class="alert alert-success alert-dismissible fade show" role="alert">';
@@ -69,9 +91,19 @@
               <?php
               // Loop through the session array to create input fields
               foreach ($_SESSION as $key => $value) {
+                $value = recursive_convert($value);  // Apply conversion recursively for each session value
                 echo '<div class="mb-3">';
-                echo '<label for="' . htmlspecialchars($key) . '" class="form-label">' . htmlspecialchars($key) . ':</label>';
-                echo '<input type="text" class="form-control" id="' . htmlspecialchars($key) . '" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($value) . '">';
+                echo '<label for="' . $key . '" class="form-label">' . $key . ':</label>';
+                
+                // Check if the value looks like JSON
+                if (is_json($value)) {
+                  // If the value is JSON, display it in a <textarea>
+                  echo '<textarea class="form-control" id="' . $key . '" name="' . $key . '" rows="10">' . htmlspecialchars($value) . '</textarea>';
+                } else {
+                  // Otherwise, display it in a regular <input> field
+                  echo '<input type="text" class="form-control" id="' . $key . '" name="' . $key . '" value="' . htmlspecialchars($value) . '">';
+                }
+                
                 echo '</div>';
               }
               ?>
